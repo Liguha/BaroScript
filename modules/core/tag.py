@@ -33,13 +33,17 @@ class Tag:
     def stringifier(self) -> Stringifier:
         return self._stringifier
     
-    def __getiitem__(self, attribute: str) -> Any:
+    def __getitem__(self, attribute: str) -> Any:
         return self._attributes.get(attribute)
     
     def __setitem__(self, attribute: str, value: Any) -> None:
-        if attribute not in self._attributes:
-            setattr(self, attribute, value)
+        setattr(self, attribute, value)
         self._attributes[attribute] = value
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if "_attributes" in self.__dict__ and name in self._attributes:
+            self._attributes[name] = value
+        object.__setattr__(self, name, value)
 
     def __call__(self, *childs: tuple['Tag']) -> 'Tag':
         """Add child tags ~ `add_childs` method."""

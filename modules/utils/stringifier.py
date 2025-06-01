@@ -4,8 +4,8 @@ from copy import deepcopy
 __all__ = ["Stringifier", "DEFAULT_RULES"]
 
 DEFAULT_RULES: dict[type, Callable[[Any], str]] = {
-    tuple: lambda x: str(x)[1:-1],
-    list: lambda x: str(x)[1:-1],
+    tuple: lambda x: ",".join([str(xi) for xi in x]),
+    list: lambda x: ",".join([str(xi) for xi in x]),
     None: lambda _: ""
 }
 
