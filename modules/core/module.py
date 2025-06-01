@@ -60,6 +60,14 @@ class Module(ABC):
     def id(self) -> int:
         return self._id
     
+    @abstractmethod
+    def _connect_in(self, signal: SignalIn) -> None:
+        pass
+
+    @abstractmethod
+    def _connect_out(self, signal: SignalOut) -> None:
+        pass
+    
     def connect(self, signal1: Signal, signal2: Signal) -> None:
         if not hasattr(self, "_initilized") or not self._initialized:
             raise RuntimeError("`connect` is not allowed before initialization.")

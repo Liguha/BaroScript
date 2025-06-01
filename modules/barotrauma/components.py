@@ -18,9 +18,9 @@ from . import (ItemTag,
                OrComponentTag,
                XorComponentTag)
 
-__all__ = ["RealModule", "Addition", "Substract", "Multiply", "Divide"]
+__all__ = ["ComponentModule", "Addition", "Substract", "Multiply", "Divide"]
 
-class RealModule(Module):
+class ComponentModule(Module):
     """Abstarction on Barotrauma logical component."""
     _need_id = True
     name: str | None = None
@@ -30,6 +30,8 @@ class RealModule(Module):
     @abstractmethod
     def tag_args(self) -> dict[str, Any]:
         pass
+
+    # TODO: _connect_in and _connect_out
 
     @override
     def compile(self) -> str:
@@ -54,7 +56,7 @@ class RealModule(Module):
 #
 #################################################################################
 
-class ArithmeticModule(RealModule):
+class ArithmeticModule(ComponentModule):
     signal_in1 = SignalIn()
     signal_in2 = SignalIn()
     signal_out = SignalOut()
@@ -87,7 +89,7 @@ class Divide(ArithmeticModule):
     name = "dividecomponent"
     component_tag = DivideComponentTag
 
-class ConditionModule(RealModule):
+class ConditionModule(ComponentModule):
     signal_in1 = SignalIn()
     signal_in2 = SignalIn()
     set_output = SignalIn()
