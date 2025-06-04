@@ -95,18 +95,16 @@ class ArithmeticModule(ComponentModule):
     signal_in2 = SignalIn()
     signal_out = SignalOut()
 
-    def __init__(self, min: int = -999999, max: int = 999999, tag_args: dict[str, Any] = {}) -> None:
+    def __init__(self, min: int = -999999, max: int = 999999) -> None:
         self._min = min
         self._max = max
-        self._kwargs = tag_args
 
     @override
     @property
     def tag_args(self) -> dict[str, Any]:
         return {
             "ClampMax": self._max,
-            "ClampMin": self._min,
-            **self._kwargs
+            "ClampMin": self._min
         }
 
 class Addition(ArithmeticModule):
@@ -131,11 +129,10 @@ class ConditionModule(ComponentModule):
     set_output = SignalIn()
     signal_out = SignalOut()
 
-    def __init__(self, true_out: Any = 1, false_out: Any = 0, max_out_len: int = 200, tag_args: dict[str, Any] = {}) -> None:
+    def __init__(self, true_out: Any = 1, false_out: Any = 0, max_out_len: int = 200) -> None:
         self._true_out = true_out
         self._false_out = false_out
         self._max_out_len = max_out_len
-        self._kwargs = tag_args
 
     @override
     @property
@@ -143,8 +140,7 @@ class ConditionModule(ComponentModule):
         return {
             "MaxOutputLength": self._max_out_len,
             "Output": self._true_out,
-            "FalseOutput": self._false_out,
-            **self._kwargs
+            "FalseOutput": self._false_out
         }
     
 class Greater(ConditionModule):

@@ -1,11 +1,11 @@
-from typing import Any, Callable, override
+from typing import Any, Callable, Type, override
 from functools import partialmethod, partial
 from itertools import count
 from uuid import uuid4
 from abc import ABC, abstractmethod
 from . import Tag, Signal, SignalIn, SignalOut
 
-__all__ = ["Module", "SchemeModule"]
+__all__ = ["Module", "SchemeModule", "create_scheme"]
 
 class Module(ABC):
     _ids: count = count(1)
@@ -158,3 +158,51 @@ class SchemeModule(Module):
         for submodule in self._submodules:
             compiled.extend(submodule.compile())
         return compiled
+
+def create_scheme(n_inputs: int, n_outputs: int, 
+                  submodules: list[Module],
+                  connections: list[tuple[tuple[int, int], tuple[int, int]]],
+                  self_in_connection: list[list[tuple[int, int]]],
+                  self_out_connection: list[list[tuple[int, int]]]) -> Type[SchemeModule]:
+    """Simple scheme fabric.
+    
+    Args:
+        n_inputs: Number of input signals.
+        n_outputs: number of output signals.
+        submodules: Used submodules - parts of the genereated module.
+        connections: List with connections between submodules.
+            connections = [((module1_idx, out_idx), (module2_idx, in_idx)), ...]
+        self_in_connections: List of signals associated with self.inputs.
+            self_in_connections = [[(module_idx, in_idx), ...], ...]
+        self_out_connections: List of signals associated with self.outputs.
+            self_out_connections = [[(module_idx, out_idx), ...], ...]
+
+    Returns:
+        New class with defined scheme.
+    """
+    def add_inputs_outputs(cls) -> type:
+        for i in range(n_inputs):
+            setattr(cls, f"in{i + 1}", SignalIn())
+        for i in range(n_outputs):
+            setattr(cls, f"out{i + 1}", SignalOut())
+        return cls
+    
+    @add_inputs_outputs
+    class CustomSchemeModule(SchemeModule):
+        def __init__(self) -> None:
+            for node1, node2 in connections:
+                mod1_idx, signal_out = node1
+                mod2_idx, signal_in = node2
+                module1 = submodules[mod1_idx]
+                module2 = submodules[mod2_idx]
+                self.connect(module1.outputs[signal_out], module2.inputs[signal_in])
+            for i, nodes in enumerate(self_in_connection):
+                for mod_idx, signal_in in nodes:
+                    module = submodules[mod_idx]
+                    self.connect(self.inputs[i], module.inputs[signal_in])
+            for i, nodes in enumerate(self_out_connection):
+                for mod_idx, signal_out in nodes:
+                    module = submodules[mod_idx]
+                    self.connect(self.outputs[i], module.outputs[signal_out])
+
+    return CustomSchemeModule
