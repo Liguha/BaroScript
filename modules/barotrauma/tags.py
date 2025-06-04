@@ -2,9 +2,11 @@ from functools import partial
 from typing import Any
 from .. import Tag
 
-__all__ = ["ItemTag", "RequiredItemTag", "HoldableTag", "ConnectionPanelTag", "InputTag", "OutputTag",
+__all__ = ["ItemTag", "RequiredItemTag", "HoldableTag", "ConnectionPanelTag",
+           "WireTag", "InputTag", "OutputTag", "LinkTag",
            "MemoryComponentTag", "ConditionComponentTag", "ArithmeticComponentTag",
-           "SignalCheckComponentTag", "GreaterComponentTag", "EqualsComponentTag", "AndComponentTag", "OrComponentTag", "XorComponentTag",
+           "SignalCheckComponentTag", "GreaterComponentTag", "EqualsComponentTag", 
+           "AndComponentTag", "OrComponentTag", "XorComponentTag",
            "AdderComponentTag", "SubstractComponentTag", "MultiplyComponentTag", "DivideComponentTag"]
 
 class ItemTag(Tag):
@@ -44,7 +46,7 @@ class RequiredItemTag(Tag):
                  optional: bool = False,
                  ignoreineditor: bool = False,
                  excludebroken: bool = True,
-                 reuireempty: bool = False,
+                 requireempty: bool = False,
                  excludefullcondition: bool = False,
                  targetslot: int = -1,
                  allowvariants: bool = True,
@@ -88,6 +90,30 @@ class ConnectionPanelTag(Tag):
         kwargs.pop("self")
         kwargs.pop("__class__")
         super().__init__("ConnectionPanel", **kwargs)
+
+class WireTag(Tag):
+    """\\<Wire> tag, defaults set to simplest connection."""
+    def __init__(self,
+                 Width: float = 0.3,
+                 NoAutoLock: bool = False,
+                 UseSpriteDepth: bool = False,
+                 PickingTime: int = 0,
+                 CanBePicked: bool = False,
+                 LockGuiFramePosition: bool = False,
+                 GuiFrameOffset: tuple[int, int] = (0, 0),
+                 AllowInGameEditing: bool = True,
+                 Msg: str = "",
+                 nodes: list[int] = [0, 0, 0, 0]) -> None:
+        kwargs: dict = locals().copy()
+        kwargs.pop("self")
+        kwargs.pop("__class__")
+        super().__init__("Wire", **kwargs)
+        self.stringifier[list] = lambda x: ";".join([str(xi) for xi in x])
+
+class LinkTag(Tag):
+    """\\<link> tag."""
+    def __init__(self, w: int, i: int) -> None:
+        super().__init__("link", w=w, i=i)
 
 class InputTag(Tag):
     """\\<input> tag."""
