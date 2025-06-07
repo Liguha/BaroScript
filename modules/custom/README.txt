@@ -1,0 +1,1 @@
+Here should be placed files with some custom core modules and their docs.

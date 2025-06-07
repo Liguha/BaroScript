@@ -1,5 +1,4 @@
-from typing import Any, Literal, override
-from itertools import count
+from typing import Any, override
 from abc import abstractmethod
 from .tags import *
 from .. import Module, Tag, SignalIn, SignalOut

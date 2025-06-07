@@ -3,6 +3,7 @@ from functools import partialmethod, partial
 from itertools import count
 from uuid import uuid4
 from abc import ABC, abstractmethod
+from graphviz import Digraph
 from . import Tag, Signal, SignalIn, SignalOut
 
 __all__ = ["Module", "SchemeModule", "create_scheme"]
@@ -41,6 +42,7 @@ class Module(ABC):
         if self._int_id:
             self._id = next(self._ids)
         self._submodules: set[Module] = set()
+        self._connect_signals: list[tuple[Signal, Signal]] = []
         self.__pre_init__()
         self._initialized: bool = True
         init(self, *args, **kwds)
@@ -64,6 +66,9 @@ class Module(ABC):
 
     def __hash__(self) -> None:
         return hash((self.__class__, self.id))
+    
+    def __repr__(self) -> str:
+        return self.__class__.__name__
 
     @property
     def inputs(self) -> tuple[SignalIn]:
@@ -114,11 +119,35 @@ class Module(ABC):
             self._submodules.add(signal1.handler)
         if signal2.handler != self:
             self._submodules.add(signal2.handler)
+        self._connect_signals.append(signals)
         self._connect_out(self, signals[1], self._connect_in(self, signals[0]))
 
     @abstractmethod
     def compile(self) -> list[Tag]:
         pass
+
+    def visualization(self) -> Digraph:
+        # FIXME: visualiztion looks ugly, some changes required
+        graph = Digraph(graph_attr={"overlap": "false"})
+        graph.attr("node", shape="record")
+        nodes: dict[Module, str] = {}
+        for module in self._submodules:
+            name = str(uuid4())
+            inputs = [f"<{name}> {name}" for name in module.input_names]
+            outputs = [f"<{name}> {name}" for name in module.output_names]
+            nodes[module] = name
+            graph.node(name, f"{{{" | ".join(inputs)}}} | {str(module)} | {{{" | ".join(outputs)}}}")
+        for signal1, signal2 in self._connect_signals:
+            if signal1.handler != self and signal2.handler != self:
+                node_head = nodes[signal2.handler]
+                head_port = signal2.name
+                node_tail = nodes[signal1.handler]
+                tail_port = signal1.name
+                graph.edge(f"{node_head}:{head_port}", f"{node_tail}:{tail_port}")
+            else:
+                # TODO: representation of the self input/output
+                pass
+        return graph
 
 # ComponentModule in barotrauma folder because it contains game based logic
         
