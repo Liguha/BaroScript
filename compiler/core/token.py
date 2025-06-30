@@ -43,7 +43,7 @@ class TokenOr(TokenBase):
     
 class TokenTree:
     def __init__(self, root: Token) -> None:
-        self.value: Any = None
+        self.value: str = ""
         self._root = root
         self._childs = []
 
@@ -65,6 +65,6 @@ class TokenTree:
         for child in self.childs:
             if len(childs) == 0:
                 childs = "\n"
-            child_str = str(child).replace("\n", "\n\t")
+            child_str = str(child).removesuffix("\n").replace("\n", "\n\t")
             childs = f"{childs}\t{child_str}\n"
         return f"{self.root} ({self.value}){childs}"
