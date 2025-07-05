@@ -1,11 +1,41 @@
-from typing import Self, Any
+from __future__ import annotations
+import re
+from re import Pattern
+from abc import ABC, abstractmethod
+from typing import Self, Generator, TYPE_CHECKING
+if TYPE_CHECKING: from .grammar import GrammarRule
 
-__all__ = ["TokenBase", "Token", "TokenOr", "TokenTree"]
+__all__ = ["TokenBase", "Token", "TokenString", "TokenExpr", "TokenOr", "TokenAnd", "TokenTree"]
 
-class TokenBase:
-    def __or__(self, other: 'TokenBase') -> 'TokenOr':
+class TokenBase(ABC):
+    def __or__(self, other: Self | str) -> 'TokenOr':
+        if isinstance(other, str):
+            other = TokenString(other)
         return TokenOr(self, other)
-
+    
+    def __ror__(self, other: Self | str) -> 'TokenOr':
+        if isinstance(other, str):
+            other = TokenString(other)
+        return TokenOr(other, self)
+    
+    def __and__(self, other: Self | str) -> 'TokenAnd':
+        if isinstance(other, str):
+            other = TokenString(other)
+        return TokenAnd(self, other)
+    
+    def __rand__(self, other: Self | str) -> 'TokenAnd':
+        if isinstance(other, str):
+            other = TokenString(other)
+        return TokenAnd(other, self)
+    
+    @abstractmethod
+    def __repr__(self) -> str:
+        pass
+    
+    @abstractmethod
+    def __iter__(self) -> Generator[Self, None, None]:
+        pass
+    
 class Token(TokenBase):
     def __init__(self, name: str) -> None:
         self._name = name
@@ -13,9 +43,6 @@ class Token(TokenBase):
     @property
     def name(self) -> str:
         return self._name
-
-    def __repr__(self) -> str:
-        return f"<{self._name}>"
     
     def __hash__(self) -> int:
         return hash(str(self))
@@ -23,23 +50,54 @@ class Token(TokenBase):
     def __eq__(self, other: Self) -> bool:
         return str(self) == str(other)
     
-    def eq(self, *definition: list) -> 'GrammarRule':
+    def eq(self, definition: TokenBase | str) -> GrammarRule:
         from .grammar import GrammarRule
+        if isinstance(definition, str):
+            definition = TokenString(definition)
         return GrammarRule(self, definition)
-
-class TokenOr(TokenBase):
-    def __init__(self, lhs: Token | Self, rhs: Token | Self) -> None:
-        self._lhs = lhs
-        self._rhs = rhs
     
-    @property
-    def tokens(self) -> tuple[Token, ...]:
-        lhs: tuple[Token, ...] = (self._lhs,) if isinstance(self._lhs, Token) else self._lhs.tokens
-        rhs: tuple[Token, ...] = (self._rhs,) if isinstance(self._rhs, Token) else self._rhs.tokens
-        return lhs + rhs
-
     def __repr__(self) -> str:
-        return " | ".join([str(t) for t in self.tokens])
+        return f"<{self.name}>"
+    
+    def __iter__(self) -> Generator['Token', None, None]:
+        yield self
+    
+class TokenString(TokenBase):
+    def __init__(self, pattern: str) -> None:
+        self._pattern = pattern
+        self._regexp: Pattern = re.compile(pattern)
+
+    @property
+    def regexp(self) -> Pattern:
+        return self._regexp
+    
+    def __repr__(self) -> str:
+        return f'"{self._pattern}"'
+    
+    def __iter__(self) -> Generator['TokenString', None, None]:
+        yield self
+    
+class TokenExpr(TokenBase):
+    def __init__(self, lhs: TokenBase, rhs: TokenBase) -> None:
+        self._parts: tuple[TokenBase, TokenBase] = (lhs, rhs)
+
+    def __iter__(self) -> Generator['TokenExpr', None, None]:
+        for part in self._parts:
+            if isinstance(part, type(self)):
+                for t in part:
+                    yield t
+            else:
+                yield part
+
+class TokenOr(TokenExpr):
+    def __repr__(self) -> str:
+        childs = [f"({t})" if isinstance(t, TokenExpr) else str(t) for t in self]
+        return f"{" | ".join(childs)}"
+    
+class TokenAnd(TokenExpr):
+    def __repr__(self) -> str:
+        childs = [f"({t})" if isinstance(t, TokenExpr) else str(t) for t in self]
+        return f"{" ".join(childs)}"
     
 class TokenTree:
     def __init__(self, root: Token) -> None:
