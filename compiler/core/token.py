@@ -28,6 +28,12 @@ class TokenBase(ABC):
             other = TokenString(other)
         return TokenAnd(other, self)
     
+    def __hash__(self) -> int:
+        return hash(str(self))
+    
+    def __eq__(self, other: Self) -> bool:
+        return str(self) == str(other)
+    
     @abstractmethod
     def __repr__(self) -> str:
         pass
@@ -43,12 +49,6 @@ class Token(TokenBase):
     @property
     def name(self) -> str:
         return self._name
-    
-    def __hash__(self) -> int:
-        return hash(str(self))
-    
-    def __eq__(self, other: Self) -> bool:
-        return str(self) == str(other)
     
     def eq(self, definition: TokenBase | str) -> GrammarRule:
         from .grammar import GrammarRule
